@@ -1,9 +1,6 @@
-*/*/mjkey.txt
-**/.DS_STORE
-**/*.pyc
-**/*.swp
-rlkit/launchers/config.py
-rlkit/launchers/conf_private.py
-MANIFEST
-*.egg-info
-\.idea/
+/data
+/tests
+/exps
+__pycache__/
+rlkit.egg-info/
+.ipynb_checkpoints/

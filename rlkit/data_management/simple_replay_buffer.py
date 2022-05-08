@@ -34,7 +34,9 @@ class SimpleReplayBuffer(ReplayBuffer):
         # at time i
         self._env_infos = {}
         for key, size in env_info_sizes.items():
-            self._env_infos[key] = np.zeros((max_replay_buffer_size, size))
+            #we want an image of 3d size so make this check
+            env_info_buf_size = (max_replay_buffer_size, size) if isinstance(size, int) else (max_replay_buffer_size, *size)
+            self._env_infos[key] = np.zeros(env_info_buf_size, dtype=np.uint8)
         self._env_info_keys = list(env_info_sizes.keys())
 
         self._replace = replace

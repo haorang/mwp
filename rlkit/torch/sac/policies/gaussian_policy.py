@@ -45,6 +45,22 @@ class ImageObsProcessor(nn.Module):
         self.img_processor.fc = nn.Identity()
         self.freeze = freeze
 
+    def get_action(self, obs_np, ):
+        obs_np_batch = {k: v[None] for k, v in obs_np.items()}
+        actions = self.get_actions(obs_np_batch)
+        return actions[0, :], {}
+
+    def get_actions(self, obs_np, ):
+        dist = self._get_dist_from_np(obs_np)
+        actions = dist.sample()
+        return elem_or_tuple_to_numpy(actions)
+
+    def _get_dist_from_np(self, *args, **kwargs):
+        torch_args = tuple({k: torch_ify(v) for k, v in x.items()} for x in args)
+        torch_kwargs = {k: torch_ify(v) for k, v in kwargs.items()}
+        dist = self(*torch_args, **torch_kwargs)
+        return dist
+
     def forward(self, obs):
         img = obs['img']
 

@@ -7,6 +7,13 @@ class ImgObsWrapper(gym.Wrapper):
         super().__init__(env)
         self.env = env
         self.img_res = (64, 64)
+        low_1 = self.env.observation_space.low[:4]
+        low_2 = self.env.observation_space.low[7:11]
+        high_1 = self.env.observation_space.high[:4]
+        high_2 = self.env.observation_space.high[7:11]
+        low = np.hstack((low_1, low_2))
+        high = np.hstack((high_1, high_2))
+        self.observation_space = gym.spaces.Box(low, high)
 
     def step(self, action):
         next_state, reward, done, info = self.env.step(action)

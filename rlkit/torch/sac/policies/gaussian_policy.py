@@ -120,6 +120,28 @@ class GaussianPolicyAdapter(TorchStochasticPolicy):
         return dist
 
 
+class DeterministicGaussianPolicyAdapter(TorchStochasticPolicy):
+    def __init__(
+            self,
+            action_distribution_generator: DistributionGenerator,
+    ):
+        super().__init__()
+        self._action_distribution_generator = action_distribution_generator
+
+    def forward(self, *args, **kwargs):
+        dist = self._action_distribution_generator.forward(*args, **kwargs)
+        return Delta(dist.mle_estimate())
+
+    def get_action(self, obs_np, ):
+        return self._action_distribution_generator.get_action(obs_np)
+
+    def get_actions(self, obs_np, ):
+        return self._action_distribution_generator.get_actions(obs_np)
+
+    def _get_dist_from_np(self, *args, **kwargs):
+        return self._action_distribution_generator._get_dist_from_np(*args, **kwargs)
+
+
 class TanhGaussianPolicyAdapter(TorchStochasticPolicy):
     """
     Usage:

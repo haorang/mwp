@@ -22,11 +22,87 @@ from rlkit.torch.sac.policies.base import (
     PolicyFromDistributionGenerator,
     MakeDeterministic,
 )
+from torch import nn
+import torchvision
+from torchvision import transforms
+from r3m import load_r3m
 
 LOG_SIG_MAX = 2
 LOG_SIG_MIN = -20
 
 # TODO: deprecate classes below in favor for PolicyFromDistributionModule
+
+
+class ImageObsProcessor(nn.Module):
+    def __init__(self, use_r3m=True, freeze=True):
+        self.use_r3m = use_r3m
+        if self.use_r3m:
+            self.img_processor = load_r3m("resnet18")
+        else:
+            self.normlayer = transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
+            self.img_processor = torchvision.models.resnet18(pretrained=False)
+
+        self.img_processor.fc = nn.Identity()
+        self.freeze = freeze
+
+    def forward(self, obs):
+        img = obs['img']
+
+        if not self.use_r3m:
+            # always assume not 3x224x224
+            preprocess = nn.Sequential(
+                transforms.Resize(256),
+                transforms.CenterCrop(224),
+                self.normlayer,
+            )
+            img = img.float() / 255.0
+            img_p = preprocess(img)
+            h = self.img_processor(img_p)
+        else:
+            h = self.img_processor(img, obs_shape=[3, 64, 64])
+
+        if self.freeze:
+            h = h.detach()
+
+        state = obs['state']
+        return torch.cat((state, h), dim=1)
+
+
+class GaussianPolicyAdapter(TorchStochasticPolicy):
+    """
+    Usage:
+
+    ```
+    obs_processor = ...
+    policy = TanhGaussianPolicyAdapter(obs_processor)
+    ```
+    """
+
+    def __init__(
+            self,
+            obs_processor,
+            obs_processor_output_dim,
+            action_dim,
+            hidden_sizes,
+    ):
+        super().__init__()
+        self.obs_processor = obs_processor
+        self.obs_processor_output_dim = obs_processor_output_dim
+        self.mean_and_log_std_net = Mlp(
+            hidden_sizes=hidden_sizes,
+            output_size=action_dim * 2,
+            input_size=obs_processor_output_dim,
+        )
+        self.action_dim = action_dim
+
+    def forward(self, obs):
+        h = self.obs_processor(obs)
+        h = self.mean_and_log_std_net(h)
+        mean, log_std = torch.split(h, self.action_dim, dim=1)
+        log_std = torch.clamp(log_std, LOG_SIG_MIN, LOG_SIG_MAX)
+        std = torch.exp(log_std)
+        return MultivariateDiagonalNormal(mean, std)
+
 
 
 class TanhGaussianPolicyAdapter(TorchStochasticPolicy):

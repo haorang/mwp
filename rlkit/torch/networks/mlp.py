@@ -206,6 +206,16 @@ class MlpQfWithObsProcessor(Mlp):
         return super().forward(flat_inputs, **kwargs)
 
 
+class MlpVfWithObsProcessor(Mlp):
+    def __init__(self, obs_processor, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.obs_processor = obs_processor
+
+    def forward(self, obs, **kwargs):
+        h = self.obs_processor(obs)
+        return super().forward(h, **kwargs)
+
+
 class MlpGoalQfWithObsProcessor(Mlp):
     def __init__(self, obs_processor, obs_dim,
                  backprop_into_obs_preprocessor=True,

@@ -6,7 +6,7 @@ from rlkit.data_management.env_replay_buffer import EnvReplayBuffer
 from rlkit.envs.wrappers import StackObservationEnv
 import rlkit.torch.pytorch_util as ptu
 from rlkit.samplers.data_collector import MdpPathCollector, ObsDictPathCollector
-from rlkit.torch.networks import MlpQfWithObsProcessor
+from rlkit.torch.networks.mlp import MlpQfWithObsProcessor, MlpVfWithObsProcessor
 from rlkit.torch.sac.policies import TanhGaussianPolicy, MakeDeterministic
 from rlkit.torch.sac.awac_trainer import AWACTrainer
 from rlkit.torch.torch_rl_algorithm import (
@@ -166,7 +166,7 @@ def experiment(variant):
     )
 
     vf_kwargs = variant.get("vf_kwargs", dict(hidden_sizes=[256, 256, ],))
-    vf = MlpQfWithObsProcessor(
+    vf = MlpVfWithObsProcessor(
         input_size=obs_dim + 512,
         output_size=1,
         **vf_kwargs
